@@ -1,6 +1,6 @@
-package cn.edu.njnu.ll1.grammarelement;
+package cn.edu.njnu.ll1.parser.grammarelement;
 
-import cn.edu.njnu.ll1.exception.GrammarDescriptorException;
+import cn.edu.njnu.ll1.parser.exception.GrammarDescriptorException;
 
 import java.util.*;
 import java.util.regex.Matcher;
@@ -29,6 +29,7 @@ public class GrammarContent {
 	}
 
 	public boolean setBeginning(String beginning) {
+		// Check the availability of the symbol
 		Symbol symbol = new Symbol();
 		symbol.isTerminal = false;
 		symbol.identifier = beginning;
@@ -41,6 +42,7 @@ public class GrammarContent {
 	}
 
 	public boolean addTerminalSymbol(Symbol symbol) {
+		// Distinct the symbol
 		if (this.terminalSymbols.contains(symbol))
 			return false;
 
@@ -49,6 +51,7 @@ public class GrammarContent {
 	}
 
 	public boolean addNonTerminalSymbol(Symbol symbol) {
+		// Distinct the symbol
 		if (this.nonTerminalSymbols.contains(symbol))
 			return false;
 
@@ -57,10 +60,12 @@ public class GrammarContent {
 	}
 
 	public boolean addRules(String symbol, List<String> rules) throws Exception {
+		// Add grammar sentences to a left symbol
 		for (Symbol s : this.nonTerminalSymbols) {
 			if (s.identifier.equals(symbol)) {
 				for (String rule : rules) {
 					List<String> elements = new ArrayList<String>();
+					// Extract symbols from the rule
 					Matcher matcher = RuleElementPattern.matcher(rule);
 					while (matcher.find()) {
 						elements.add(matcher.group(1).trim());
@@ -77,12 +82,14 @@ public class GrammarContent {
 	}
 
 	private void addRule(String symbol, List<String> rule) throws Exception {
+		// A symbol preprocess and control for rule insertion
 		List<GrammarSentence> target = this.grammar.get(symbol);
 		if (null == target) {
 			this.grammar.put(symbol, new ArrayList<GrammarSentence>());
 			target = this.grammar.get(symbol);
 		}
 
+		// GrammarSentence is actually an array of symbols with Select set for further usage
 		GrammarSentence gs = new GrammarSentence();
 		for (String str : rule) {
 			if (!addRule(str, gs))
@@ -93,6 +100,8 @@ public class GrammarContent {
 	}
 
 	private boolean addRule(String str, GrammarSentence gs) {
+		// Process the name of the symbols into symbols by consulting the symbol table
+		// meanwhile verify the symbols
 		Symbol tempSymbol = new Symbol();
 		boolean found = false;
 
@@ -123,7 +132,9 @@ public class GrammarContent {
 	}
 
 	private Set<Symbol> getFirst(Symbol s) {
+		// Get the First-set
 		if (s.isTerminal) {
+			// The first-set of terminal is itself
 			Set<Symbol> result = new HashSet<>();
 			result.add(s);
 			return result;
@@ -131,9 +142,12 @@ public class GrammarContent {
 
 		Set<Symbol> first = this.firsts.get(s);
 		if (first == null) {
+			// Need to put an empty set first in case of recursion infinitely
+			// considering A -> B..., B -> CA..., C -> empty | ...
 			first = new HashSet<Symbol>();
 			this.firsts.put(s, first);
 		} else
+			// Has the record in the map, simply return the result
 			return first;
 
 		List<GrammarSentence> rules = this.grammar.get(s.identifier);
@@ -144,18 +158,23 @@ public class GrammarContent {
 			for (int i = 0; i < gs.contents.size(); i++) {
 				Symbol temp = gs.contents.get(i);
 				if (temp.isTerminal) {
+					// Meet the terminal in the rule, add it and break the loop
 					first.add(temp);
 					break;
 				} else if (!s.identifier.equals(temp.identifier)) {
+					// Meet a different non-terminal, add it all
 					Set<Symbol> recFirst = this.firsts.get(temp.identifier);
 					if (recFirst == null)
+						// no record in the map, recurse to get it
 						recFirst = getFirst(temp);
 
 					if (!recFirst.contains(Symbol.Empty)) {
+						// Contains no empty rule, add the first-set and break the loop
 						first.addAll(recFirst);
 						break;
 					}
 					if (i != gs.contents.size() - 1) {
+						// the last first-set needn't to remove the empty symbol
 						recFirst.remove(Symbol.Empty);
 						first.addAll(recFirst);
 					}
@@ -167,12 +186,17 @@ public class GrammarContent {
 	}
 
 	private Set<Symbol> getFollow(Symbol s) {
+		// Get the follow-set of a symbol
+		// query the map first
 		Set<Symbol> follow = this.follows.get(s);
 		if (follow == null) {
+			// Haven't processed before
 			follow = new HashSet<Symbol>();
+			// The beginning of the grammar should add # to the follow-set
 			if (s.equals(this.beginning))
 				follow.add(Symbol.End);
 
+			// avoid infinite recursion
 			this.follows.put(s, follow);
 		} else
 			return follow;
@@ -180,11 +204,15 @@ public class GrammarContent {
 		for (Map.Entry<String, List<GrammarSentence>> entry : grammar.entrySet()) {
 			List<GrammarSentence> rules = entry.getValue();
 			for (GrammarSentence rule : rules) {
+				// If a rule contains target symbol, we care the following one instead
 				boolean found = false;
 				for (int i = 0; i < rule.contents.size(); i++) {
 					if (found) {
+						// Process the following symbol
 						Set<Symbol> first = getFirst(rule.contents.get(i));
 						if (first.contains(Symbol.Empty))
+							// No empty in follow-set and take the following symbol
+							// into consideration by not reset the found flag
 							first.remove(Symbol.Empty);
 						else
 							found = false;
@@ -194,6 +222,8 @@ public class GrammarContent {
 					}
 				}
 				if (found) {
+					// if is the target symbol is the end of the rule
+					// or ...ab first(b)->empty
 					if (!entry.getKey().equals(s.identifier)) {
 						follow.addAll(getFollow(new Symbol(false, entry.getKey(), null)));
 					}
@@ -206,6 +236,7 @@ public class GrammarContent {
 	}
 
 	public Set<Symbol> getSelect(Symbol s, int index) {
+		// Get the select-set by processed first and follow-set
 		Set<Symbol> select = new HashSet<Symbol>();
 
 		GrammarSentence gs = this.grammar.get(s.identifier).get(index);
@@ -214,6 +245,7 @@ public class GrammarContent {
 		for (; i < gs.contents.size(); i++) {
 			Symbol temp = gs.contents.get(i);
 			if (temp.isTerminal && !temp.equals(Symbol.Empty)) {
+				// not empty and is terminal, add itself and break
 				select.add(temp);
 				break;
 			} else {
@@ -222,12 +254,14 @@ public class GrammarContent {
 					select.addAll(first);
 					break;
 				} else {
+					// Select contains no empty
 					first.remove(Symbol.Empty);
 					select.addAll(first);
 				}
 			}
 		}
 		if (i == gs.contents.size())
+			// meets the end of the sub rule so it must contain empty, get follow set
 			select.addAll(getFollow(s));
 
 		gs.selects = select;

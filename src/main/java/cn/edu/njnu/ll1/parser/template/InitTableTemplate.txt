@@ -1,0 +1,3 @@
+        List<Symbol> ${varName} = new ArrayList<Symbol>();
+${initList}        table.put(${ID}, ${varName});
+

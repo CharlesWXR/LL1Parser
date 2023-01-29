@@ -4,7 +4,8 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class StringUtil {
+public class StringUtils {
+	// util for template rendering
 	private static Pattern TemplatePattern = Pattern.compile("\\$\\{([\\w]+?)}");
 
 	public static String processTemplate(String template, Map<String, String> mapper) {

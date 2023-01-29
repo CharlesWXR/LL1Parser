@@ -1,28 +1,76 @@
-package cn.edu.njnu.ll1.generator;
+package cn.edu.njnu.ll1.parser.generator;
 
-import cn.edu.njnu.ll1.grammarelement.GrammarContent;
-import cn.edu.njnu.ll1.grammarelement.LL1Table;
-import cn.edu.njnu.ll1.grammarelement.Symbol;
+import cn.edu.njnu.ll1.parser.exception.DriverException;
+import cn.edu.njnu.ll1.parser.grammarelement.GrammarContent;
+import cn.edu.njnu.ll1.parser.grammarelement.LL1Table;
+import cn.edu.njnu.ll1.parser.grammarelement.Symbol;
+import cn.edu.njnu.ll1.parser.wordelement.TypeEnum;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.Stack;
 
+// Driver class for LL1Table
 public class TableDriver {
 	private LL1Table table = new LL1Table();
-	List<Symbol> symbolStack = new ArrayList<Symbol>();
+	Stack<Symbol> symbolStack = new Stack<Symbol>();
 
 	public void init(GrammarContent grammarContent) {
+		// Init Table by GrammarContent from lex scanner GrammarDescriptionScanner
 		this.table.init(grammarContent);
+		// Init driver by add # and beginning symbol in the grammar
 		this.symbolStack.clear();
-		this.symbolStack.add(Symbol.End);
-		this.symbolStack.add(table.getBeginning());
+		this.symbolStack.push(Symbol.End);
+		this.symbolStack.push(table.getBeginning());
 	}
 
 	public void init() {
+		// Init driver by add # and beginning symbol in the grammar
 		this.symbolStack.clear();
-		this.symbolStack.add(Symbol.End);
-		this.symbolStack.add(table.getBeginning());
+		this.symbolStack.push(Symbol.End);
+		this.symbolStack.push(table.getBeginning());
 	}
 
+	public boolean next(Object type) throws Exception {
+		// Get next state, will return whether to read next word
+		Symbol present = this.symbolStack.peek();
+		if (present.isTerminal) {
+			// If is terminal symbol in the top and matches, pop the it and read next
+			if (present.type.equals(type)) {
+				if (present.type == TypeEnum.End) {
+					// If is the end of the grammar and indeed get the end, accept
+					System.out.println("Accepted!");
+				}
+				this.symbolStack.pop();
+				return true;
+			} else
+				// Invalid terminal symbol, error
+				throw new DriverException(DriverException.InvalidInput);
+		}
 
+		// Is the non-terminal symbol, query the LL1Table
+		List<Symbol> rule = this.table.getNext(present.identifier, type);
+		if (rule == null)
+			throw new DriverException(DriverException.InvalidInput);
+
+		// Print reduce rule
+		outputRule(present.identifier, rule);
+
+		// Symbols in the right push in stack in reversed sequence
+		this.symbolStack.pop();
+		for (int i = rule.size() - 1; i >= 0; i--) {
+			Symbol temp = rule.get(i);
+			if (temp.equals(Symbol.Empty))
+				continue;
+			this.symbolStack.push(temp);
+		}
+		return false;
+	}
+
+	private void outputRule(String left, List<Symbol> right) {
+		System.out.print(left + "\t==>\t");
+		for (Symbol s : right) {
+			System.out.print("{" + s.identifier + "}");
+		}
+		System.out.println("");
+	}
 }

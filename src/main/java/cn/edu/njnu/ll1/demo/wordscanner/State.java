@@ -1,4 +1,4 @@
-package edu.njnu.wordscanner;
+package cn.edu.njnu.ll1.demo.wordscanner;
 
 public interface State {
 	State next(char word);

@@ -1,4 +1,5 @@
-import cn.edu.njnu.ll1.generator.GrammarDescriptionScanner;
+import cn.edu.njnu.ll1.parser.generator.GrammarDescriptionScanner;
+import cn.edu.njnu.ll1.parser.wordelement.TypeEnum;
 import org.junit.Test;
 
 import java.io.*;
@@ -8,7 +9,7 @@ public class ScannerTest {
 	public void testScanner() {
 		GrammarDescriptionScanner g = new GrammarDescriptionScanner();
 		try {
-			FileInputStream in = new FileInputStream(new File("111.txt"));
+			FileInputStream in = new FileInputStream(new File("LL1.txt"));
 			InputStreamReader reader = new InputStreamReader(in);
 			BufferedReader bufferReader = new BufferedReader(reader);
 

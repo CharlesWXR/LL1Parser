@@ -1,4 +1,4 @@
-package cn.edu.njnu.ll1.exception;
+package cn.edu.njnu.ll1.parser.exception;
 
 public class GrammarDescriptorException extends Exception {
 	public static final String UndeclaredIdentifier = "Undeclared Identifier: ";

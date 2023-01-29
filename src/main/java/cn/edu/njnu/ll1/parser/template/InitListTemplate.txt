@@ -1,0 +1,1 @@
+        ${varName}.add(new Symbol(${isTerminal}, "${identifier}", ${type}));

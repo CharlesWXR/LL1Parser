@@ -1,4 +1,4 @@
-package edu.njnu.exception;
+package cn.edu.njnu.ll1.demo.exception;
 
 public class ScannerException extends Exception {
 	public static final String NoMatch = "No matching state found";

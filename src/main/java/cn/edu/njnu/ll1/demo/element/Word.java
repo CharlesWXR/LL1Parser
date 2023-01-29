@@ -1,4 +1,6 @@
-package cn.edu.njnu.ll1.parser.wordelement;
+package cn.edu.njnu.ll1.demo.element;
+
+import cn.edu.njnu.ll1.parser.wordelement.EnumBase;
 
 public class Word {
 	protected EnumBase type;

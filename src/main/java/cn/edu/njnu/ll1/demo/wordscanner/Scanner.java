@@ -1,8 +1,9 @@
-package edu.njnu.wordscanner;
+package cn.edu.njnu.ll1.demo.wordscanner;
 
-import edu.njnu.exception.ScannerException;
+import cn.edu.njnu.ll1.demo.exception.ScannerException;
 
 public class Scanner {
+	// The manual driver for auto-generated WordScanner by previous program MiniCLex
 	private int index = 0;
 	private StringBuffer buffer = new StringBuffer();
 	private WordScanner wordscanner = new WordScanner();

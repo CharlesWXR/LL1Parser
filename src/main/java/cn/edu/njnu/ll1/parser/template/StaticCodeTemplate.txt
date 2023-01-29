@@ -1,0 +1,8 @@
+        // Init table section
+${initTable}
+
+        // Init non-terminal mapper section
+${initNonTerminalMapper}
+
+        // Init terminal mapper section
+${initTerminalMapper}

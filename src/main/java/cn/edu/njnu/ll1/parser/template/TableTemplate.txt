@@ -1,0 +1,49 @@
+package ${packageName};
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import cn.edu.njnu.ll1.parser.grammarelement.Symbol;
+
+${packageDependencies}
+
+/*
+ * Auto-generated code to store LL1Table
+ * Will assemble the table when class loaded
+ */
+
+public class LL1Table {
+	private static Symbol beginning = ${beginning};
+	private static Map<Long, List<Symbol>> table = new HashMap<Long, List<Symbol>>();
+	private static Map<String, Integer> nonTerminalMapper = new HashMap<String, Integer>();
+	private static Map<Object, Integer> terminalMapper = new HashMap<Object, Integer>();
+
+    static {
+${staticCode}
+    }
+
+	private long getID(String nonTerminal, Object input) {
+		if (nonTerminalMapper.get(nonTerminal) == null)
+			return -1;
+		if (terminalMapper.get(input) == null)
+			return -1;
+
+		int nonTerminalID = nonTerminalMapper.get(nonTerminal);
+		int inputID = terminalMapper.get(input);
+		return (long) nonTerminalID << 32 | (long) inputID;
+	}
+
+	public Symbol getBeginning() {
+		return beginning;
+	}
+
+	public List<Symbol> getNext(String present, Object inputType) {
+		long id = getID(present, inputType);
+		if (id == -1)
+			return null;
+
+		return table.get(id);
+	}
+}

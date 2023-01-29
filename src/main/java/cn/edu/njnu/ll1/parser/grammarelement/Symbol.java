@@ -1,7 +1,7 @@
-package cn.edu.njnu.ll1.grammarelement;
+package cn.edu.njnu.ll1.parser.grammarelement;
 
 
-import cn.edu.njnu.ll1.wordelement.TypeEnum;
+import cn.edu.njnu.ll1.parser.wordelement.TypeEnum;
 
 public class Symbol {
 	public boolean isTerminal;
@@ -22,6 +22,7 @@ public class Symbol {
 
 	@Override
 	public int hashCode() {
+		// Simple hash for hashmap, terminal <= 0, nonTerminal >= 0
 		int res = 0;
 		if (this.type != null) {
 			Enum type = (Enum) this.type;

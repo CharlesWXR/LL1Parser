@@ -1,18 +1,18 @@
-package cn.edu.njnu.ll1.generator;
+package cn.edu.njnu.ll1.parser.generator;
 
-import cn.edu.njnu.ll1.exception.GrammarDescriptorException;
-import cn.edu.njnu.ll1.grammarelement.GrammarContent;
-import cn.edu.njnu.ll1.grammarelement.Symbol;
+import cn.edu.njnu.ll1.parser.exception.GrammarDescriptorException;
+import cn.edu.njnu.ll1.parser.grammarelement.GrammarContent;
+import cn.edu.njnu.ll1.parser.grammarelement.Symbol;
 
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 public class GrammarDescriptionScanner {
-	private cn.edu.njnu.ll1.grammarelement.GrammarContent content = new GrammarContent();
-	private String[] dependencies = null;
+	private GrammarContent content = new GrammarContent();
+	private String dependencyPackage = "";
+	private Set<String> packages = new HashSet<String>();
 
 	private static final String Dependencies = "\\$DEPENDENCIES[\\s]*\\{(.+?)}";
 	private static final String Terminal = "\\$VT[\\s]*\\{(.+?)}";
@@ -24,23 +24,15 @@ public class GrammarDescriptionScanner {
 	private static Pattern NonTerminalPattern = Pattern.compile(NonTerminal, Pattern.DOTALL);
 	private static Pattern GrammarContentPattern = Pattern.compile(GrammarContent, Pattern.DOTALL);
 
-	@Override
-	public String toString() {
-		return "GrammarDescriptionScanner{" +
-				"content=" + content.toString() +
-				", dependencies=" + Arrays.toString(dependencies) +
-				'}';
-	}
-
 	public void scan(String buffer) throws Exception {
+		// Scan the lex file content and analyse the content
+		// Get dependencies
 		Matcher m = DependenciesPattern.matcher(buffer);
 		if (m.find()) {
-			String dependency = m.group(1);
-			this.dependencies = Arrays.stream(dependency.split("[\\s]+"))
-					.filter(s -> s != null && !s.equals(""))
-					.toArray(String[]::new);
+			this.dependencyPackage = m.group(1).trim() + ".";
 		}
 
+		// Get non-terminal definitions
 		m = NonTerminalPattern.matcher(buffer);
 		if (m.find()) {
 			String nonTerminal = m.group(1);
@@ -51,13 +43,11 @@ public class GrammarDescriptionScanner {
 			for (Symbol s : nonTerminals) {
 				this.content.addNonTerminalSymbol(s);
 			}
-		}
-		else
+		} else
 			throw new GrammarDescriptorException(GrammarDescriptorException.MissingNonTerminals);
 
+		// Get terminal definitions
 		m = TerminalPattern.matcher(buffer);
-		String packageName = this.getClass().getPackage().getName();
-		packageName = packageName.substring(0, packageName.lastIndexOf('.')) + ".wordelement.";
 		if (m.find()) {
 			String terminal = m.group(1);
 			String[] rawTerminals = terminal.trim().split("[\n\r]+");
@@ -65,18 +55,31 @@ public class GrammarDescriptionScanner {
 				int index = s.lastIndexOf(',');
 				String symbol = s.substring(1, index).trim();
 				String type = s.substring(index + 1, s.length() - 1).trim();
+				// Split the Enum into ClassName.EnumName for reflection
 				String[] typeClass = type.split("[.]");
-				Class clazz = Class.forName(packageName + typeClass[0]);
+				Class clazz = null;
+				// Reflectively get the enum class and get instance by Enum.valueOf(String) => Enum Object
+				if (typeClass[0].equals("TypeEnum")) {
+					// The type enum is contained in generator instead of customized
+					// outside the package in previous programs
+					clazz = Class.forName("cn.edu.njnu.ll1.parser.wordelement.TypeEnum");
+					this.packages.add("cn.edu.njnu.ll1.parser.wordelement.TypeEnum");
+				}
+				else {
+					clazz = Class.forName(this.dependencyPackage + typeClass[0]);
+					this.packages.add(this.dependencyPackage + typeClass[0]);
+				}
+
 				this.content.addTerminalSymbol(
 						new Symbol(true,
 								symbol,
 								clazz.getMethod("valueOf", String.class).invoke(null, typeClass[1]))
 				);
 			}
-		}
-		else
+		} else
 			throw new GrammarDescriptorException(GrammarDescriptorException.MissingTerminals);
 
+		// The grammar definitions
 		m = GrammarContentPattern.matcher(buffer);
 		if (m.find()) {
 			String start = m.group(1);
@@ -84,6 +87,7 @@ public class GrammarDescriptionScanner {
 				throw new GrammarDescriptorException(GrammarDescriptorException.IllegalGrammarBeginning + start);
 
 			String rawRules = m.group(2);
+			// Split rule in a line by | into rules
 			String[] rules = rawRules.trim().split("[\n\r]+");
 			for (String r : rules) {
 				int index = r.indexOf(":");
@@ -94,8 +98,7 @@ public class GrammarDescriptionScanner {
 						.collect(Collectors.toList());
 				this.content.addRules(name, subRules);
 			}
-		}
-		else
+		} else
 			throw new GrammarDescriptorException(GrammarDescriptorException.MissingGrammarDefinition);
 
 		this.content.process();
@@ -103,5 +106,9 @@ public class GrammarDescriptionScanner {
 
 	public GrammarContent getContent() {
 		return this.content;
+	}
+
+	public Set<String> getPackages() {
+		return packages;
 	}
 }
